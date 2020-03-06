@@ -5,16 +5,24 @@ import scipy.io
 class dataset:
     """Dataset class.
     """
-    def __init__(self, basedir, subject_list=""):
+    def __init__(self, basedir, subject_list="", group=""):
         """Loads complete dataset
         """
-        if type(basedir) != str:
+        if not all(type(i) == str for i in [basedir, subject_list, group]):
             raise Exception(f"Input error. {basedir} is no string.")
+
         assert Path(basedir).exists(), f"Basedirectory {basedir} not found."
         self.dir = Path(basedir)
         self.sub_list = subject_list.split()
+
+        if len(group) != 0:
+            print('Evaluating all subjects of group', group)
+            for g in group.split():
+                group_dir=Path(self.dir, g)
+                self.sub_list.extend([str(s)[str(s).find('sub-'):] for s in group_dir.glob('sub-*')])
+
         if len(self.sub_list) == 0:  #if no subject id is specified
-            self.sub_list=[str(s)[str(s).find('sub-'):] for s in self.dir.rglob('*/sub-*')] #list of all subjects found in subdirectories
+            self.sub_list.extend([str(s)[str(s).find('sub-'):] for s in self.dir.rglob('*/sub-*')]) #list of all subjects found in subdirectories
 
         for subjectID in self.sub_list:
             setattr(self, subjectID.replace("-","_"), subject(subjectID, basedir))
@@ -33,8 +41,7 @@ class subject:
         self.basedir = Path(basedir)
         self.id = subjectID
 
-        groups=['SCZ', 'HC', 'SCZaff']
-        for group_name in groups:
+        for group_name in ['SCZ', 'HC', 'SCZaff']:
             dir = Path(self.basedir, group_name, self.id)
             found_group=False
             if dir.exists():
@@ -42,7 +49,7 @@ class subject:
                 self.dir = dir
                 found_group=True
                 break
-        assert found_group, f"Group of {self.id} not found."
+        assert found_group, f"Directory of subject {self.id} not found."
 
         for f in file_dict:
             assert list(self.dir.glob(f'**/{f}*')), f"{f} of {self.id} not found."
