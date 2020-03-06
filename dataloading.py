@@ -5,14 +5,17 @@ import scipy.io
 class subject:
     """Dataset class.
     """
-    def __init__(self, subjectID, basedir):
+    def __init__(self, subjectID, basedir, file_dict={'Corr_Matrix':'corr_mat', 'Time_Course_Matrix':'tc'}):
         """
         Load the correct pathways to the
         """
+        if type(subjectID) != str or type(basedir) != str or type(file_dict) != dict:
+            raise Exception(f"Input error of {subjectID}.")
 
-        assert Path(basedir).exists(), "Base Directory not found."
+        assert Path(basedir).exists(), f"Base Directory of {subjectID} not found."
         self.basedir = Path(basedir)
         self.id = subjectID
+
         groups=['SCZ', 'HC', 'SCZaff']
         for group_name in groups:
             dir = Path(self.basedir, group_name, self.id)
@@ -24,26 +27,18 @@ class subject:
                 break
         assert found_group, f"Group of {self.id} not found."
 
-        assert list(self.dir.glob('**/Time_Course_Mat*')), f"Time Course Matrix of {self.id} not found."
-        self.tc_file = list(self.dir.glob('**/Time_Course_Mat*'))[0]
+        for f in file_dict:
+            assert list(self.dir.glob(f'**/{f}*')), f"{f} of {self.id} not found."
+            setattr(self, f'{file_dict[f]}_file', list(self.dir.glob(f'**/{f}*'))[0])
+            setattr(self, f'{file_dict[f]}', self.loadfile(getattr(self, f'{file_dict[f]}_file'), file_dict[f]))
 
-        assert list(self.dir.glob('**/Corr_Mat*')), f"Correlation Matrix of {self.id} not found."
-        self.corr_file=list(self.dir.glob('**/Corr_Mat*'))[0]
 
-        self.Tcourses = self.loadfile(self.tc_file)
-        self.Cmat = self.loadfile(self.corr_file)
-
-    def loadfile(self, path):
+    def loadfile(self, path, key):
         """
         :param file: path to .mat file that should be loaded
-        :return: array with the data from .mat file
+        :return: np.array containing data from .mat file
         """
-
-        if str(path).find('Corr_Mat') != -1:    #Checks which file is loaded and creates key
-            key='corr_mat'
-        elif str(path).find('Time_Course_Mat') != -1:
-            key='tc'
-
         mat_dict = scipy.io.loadmat(path)
-        mat = np.array(mat_dict[key])
+        assert type(mat_dict[key]) != np.array, "Matrix in .mat file not found. Consider key error"
+        mat = mat_dict[key]
         return mat
