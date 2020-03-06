@@ -35,8 +35,7 @@ def partial_corr_inv(M):
     inv_M=np.linalg.inv(pearson_corr(M))
     P=np.array([-(inv_M[i,j])/math.sqrt(inv_M[i,i]*inv_M[j,j]) for i in range(inv_M.shape[0]) for j in range(inv_M.shape[0])])
     P=P.reshape(inv_M.shape)        #reshaping the 1x(p^2) dimensional array to a pxp dimensional array
-    np.fill_diagonal(P,1)           #fills the main-diagonal with ones
-    return P
+    return np.fill_diagonal(P,1)    #fill diagonal with ones and return matrix
 
 def partial_corr(M):
     """ Returns the partial linear correlation coefficients between pairs of rows in M.

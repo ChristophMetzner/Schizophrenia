@@ -2,8 +2,25 @@ from pathlib import Path
 import numpy as np
 import scipy.io
 
-class subject:
+class dataset:
     """Dataset class.
+    """
+    def __init__(self, basedir, subject_list=""):
+        """Loads complete dataset
+        """
+        if type(basedir) != str:
+            raise Exception(f"Input error. {basedir} is no string.")
+        assert Path(basedir).exists(), f"Basedirectory {basedir} not found."
+        self.dir = Path(basedir)
+        self.sub_list = subject_list.split()
+        if len(self.sub_list) == 0:  #if no subject id is specified
+            self.sub_list=[str(s)[str(s).find('sub-'):] for s in self.dir.rglob('*/sub-*')] #list of all subjects found in subdirectories
+
+        for subjectID in self.sub_list:
+            setattr(self, subjectID.replace("-","_"), subject(subjectID, basedir))
+
+class subject:
+    """Subject class.
     """
     def __init__(self, subjectID, basedir, file_dict={'Corr_Matrix':'corr_mat', 'Time_Course_Matrix':'tc'}):
         """
