@@ -81,6 +81,7 @@ def dynmfc(TimeCourseBold, windowsize=30, stepsize=10, TR=2, method=1, output_wi
             4) TR in seconds
             5) Method:  1 -- pearson correlation
                         2 -- partial correlation
+            6) Output_windows : boolean variable defining correlation matrices for each timewindow are outputet
     :return: ndim array containing the correlations between the region-wise correlation matrices for each time window
     """
     assert int(stepsize) >= int(TR), "Stepsize has to be greater than repetition time"
@@ -92,12 +93,12 @@ def dynmfc(TimeCourseBold, windowsize=30, stepsize=10, TR=2, method=1, output_wi
     ls_corr_mat=[]      #initiate list of correlation matrices
     strtpoint=0
     while strtpoint <= frnum-wsize:
-        endpoint=strtpoint+int(wsize)     #endpoint of current slice
+        endpoint=strtpoint+int(wsize)                       #endpoint of current slice
         tc_slice=tc[:, strtpoint:endpoint]
         if method == 1:
-            ls_corr_mat.append(pearson_corr(tc_slice))   #appends a nregions x nregions dimensional corrmatrix to list
+            ls_corr_mat.append(pearson_corr(tc_slice))      #appends a nregions x nregions dimensional corrmatrix to list
         elif method == 2:
-            ls_corr_mat.append(partial_corr_inv(tc_slice))   #appends the matrix using partial correlation
+            ls_corr_mat.append(partial_corr_inv(tc_slice))  #appends the matrix using partial correlation
         strtpoint += int(stpsize)
     excl_fr=frnum-endpoint    #calculating the number of frames not included in the analysis.
     if excl_fr != 0:
