@@ -21,7 +21,7 @@ class network:
         """
         Calculate the shortest path between all nodes in the network using Dijstrak Algorithm:
         https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
-        :return nxn dimensional pd.DataFrame with shortest path length between all pairs of nodes in the network
+        :return Dictionary of two nxn dimensional pd.DataFrames with shortest path / shortest distance between all pairs of nodes in the network
         """
         inv_adj_mat=self.adj_mat.abs().pow(-1)                                                                          # Inverts adjacency matrix
         shortestdist_df=pd.DataFrame(np.zeros(inv_adj_mat.shape), columns=self.nodes, index=self.nodes)                 # Initialize Path matrix and distance matrix
@@ -125,12 +125,20 @@ class network:
         node_avg_distance=self.char_path()['node_avg_dist']
         return pd.Series(np.power(node_avg_distance, -1), index=self.nodes)
 
-    def betweenness_centrality:
+    def betweenness_centrality(self):
         """
         Calculate the betweenness centrality of each node in network
         :return: ndimensional pd.Series
         """
-        b=0
-        for n in range(len(self.shortestpath()['Path'])):
-            total=((len(self.nodes)-2)*(len(self.nodes)-1))/2
-        return pd.Series()
+        betw_centrality=pd.Series(np.zeros(len(self.nodes)), index=self.nodes)
+        shortest_paths=self.shortestpath()['Path']
+        for n in self.nodes:
+            counter = 0
+            mat=shortest_paths.drop(n, axis=0); mat=mat.drop(n, axis=1)  # Drops the nth column and the nth row.
+            substr='-'+str(n)+'-'
+            for c in mat.columns:
+                for e in mat.loc[:c,c]:
+                    if e.find(substr) != -1:
+                        counter += 1
+            betw_centrality.loc[n]=counter/((len(self.nodes)-1)*(len(self.nodes)-2))
+        return betw_centrality
