@@ -153,7 +153,7 @@ class network:
         Returns a random network that is matched to the input networks covariance matrix.
         Using Hirschberger-Qi-Steuer Algorithm as cited in Zalesky 2012b
         :return: n x n dimensional pd.Dataframe
-        TODO mean off diagonal, mean diagonal elements, variance of off diagonal elements, is positive finite
+        TODO test code, control if input has to be is positive finite
         """
         C=self.cov_mat
         diag_sum=np.sum(np.diagonal(C))
