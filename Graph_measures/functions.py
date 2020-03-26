@@ -3,6 +3,21 @@ import math
 import pandas as pd
 from scipy import stats
 
+def covariance_mat(M):
+    """ Returns the covariance matrix of rows of input matrix
+    :parameter: np.ndarray or pd.DataFrame, shape n x p
+    :return: n x p np.ndarray covariance matrix
+    """
+    if not isinstance(M, np.ndarray) and not isinstance(M, pd.DataFrame):           # Checks input type
+        raise Exception('Input Matrix has to be np.array or pd.DataFrame')
+    M=np.array(M)   # Converts to np.array
+    C=np.zeros([M.shape[0], M.shape[0]])
+    for i in range(0,M.shape[0]):
+        for j in range(i,M.shape[0]):
+            C[i,j]=np.mean(np.multiply(M[i,:]-M.mean(1)[i], M[j,:]-M.mean(1)[j]))   # Covariance of the ith with the jth row
+            C[j,i]=C[i,j]                                                           # Set lower triangle of matrix to the same values as upper triangle
+    return C
+
 def pearson_corr(M):
     """ Returns the pearson correlation coefficients between pairs of rows in M.
         The function uses matrix inversion to calculate the partial correlation.

@@ -1,15 +1,20 @@
 import pandas as pd
 import numpy as np
 from itertools import combinations
+from Graph_measures import functions as func
 
 class network:
     """Defines input as network
-    :parameter pd.DataFrame that contains the adjacency matrix of the network
+    :parameter pd.DataFrame that contains the adjacency matrix of the network, np.ndarray timecourse matrix
     """
-    def __init__(self, Adjacency_Matrix):
+    def __init__(self, Adjacency_Matrix, tc):
         assert isinstance(Adjacency_Matrix, pd.DataFrame), "Input must be panda.DataFrame"
         self.adj_mat=Adjacency_Matrix
         self.nodes = list(self.adj_mat.index)
+
+        assert isinstance(tc, np.ndarray), "Timecourse must be np.ndarray"
+        self.cov_mat=func.covariance_mat(tc)
+
     def degree(self, node="all"):
         """
         Calculate the degree of each node in the network.
@@ -109,7 +114,7 @@ class network:
 
     def transitivity(self):
         """
-        Calculate the cluster coefficient of the network
+        Calculate the transitivity of the network
         :return: np.float
         """
         triangles=np.sum(np.multiply(np.asarray(self.num_triangles()),2))     # Multiply sum of triangles with 2 and sum the array
@@ -142,3 +147,31 @@ class network:
                         counter += 1
             betw_centrality.loc[n]=counter/((len(self.nodes)-1)*(len(self.nodes)-2))
         return betw_centrality
+
+    def random_net(self):
+        """
+        Returns a random network that is matched to the input networks covariance matrix.
+        Using Hirschberger-Qi-Steuer Algorithm as cited in Zalesky 2012b
+        :return: n x n dimensional pd.Dataframe
+        TODO mean off diagonal, mean diagonal elements, variance of off diagonal elements, is positive finite
+        """
+        C=self.cov_mat
+        diag_sum=np.sum(np.diagonal(C))
+        diag_len=len(np.diagonal(C))
+        diag_mean=diag_sum/diag_len
+        off_mean=(np.sum(C)-diag_sum)/(C.size-diag_len)
+        off_var=0
+        for i in range(0,C.shape(0)-1):
+            for j in range(i+1,C.shape(1)):
+                off_var += 2*(C[i,j]-off_mean)  # Times 2  because each off diagonal value appears twice in covariance matrix
+        m = max(2, (diag_mean**2-off_mean**2/off_var))
+        mu = np.sqrt(off_mean/off_var)
+        sigma = -mu**2 + np.sqrt(mu**4+(off_var/m))
+        X=np.random.normal(mu,sigma,C.size)
+        Random_C=np.multiply(X,X.T)
+        return Random_C
+
+    def assortivity(self):
+        return
+    def smallworldness(self):
+        return
