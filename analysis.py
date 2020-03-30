@@ -1,6 +1,6 @@
 import dataloading as load
-from Graph_measures import functions as func
-from Graph_measures import network as net
+from graph_measures import functions as func
+from graph_measures import network as net
 #%%
 # Set the basedirectory for each Dataset
 HC_set=load.dataset(r'C:\Users\Kamp\Documents\SCAN\Thesis\Data', group='HC')

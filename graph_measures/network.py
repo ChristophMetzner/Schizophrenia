@@ -1,19 +1,25 @@
 import pandas as pd
 import numpy as np
 from itertools import combinations
-from Graph_measures import functions as func
+import graph_measures.functions as func
+
 
 class network:
     """Defines input as network
     :parameter pd.DataFrame that contains the adjacency matrix of the network, np.ndarray timecourse matrix
+    TODO use absolute values or set negativ values to zero
     """
-    def __init__(self, Adjacency_Matrix, tc):
-        assert isinstance(Adjacency_Matrix, pd.DataFrame), "Input must be panda.DataFrame"
-        self.adj_mat=Adjacency_Matrix
+    def __init__(self, Adjacency_Matrix, tc=[]):
+        assert isinstance(Adjacency_Matrix, (pd.DataFrame, np.ndarray)), "Input must be numpy.ndarray or panda.DataFrame"
+        self.adj_mat=pd.DataFrame(Adjacency_Matrix)
         self.nodes = list(self.adj_mat.index)
 
-        assert isinstance(tc, np.ndarray), "Timecourse must be np.ndarray"
-        self.cov_mat=func.covariance_mat(tc)
+        if tc:
+            assert isinstance(tc, np.ndarray), "Timecourse must be np.ndarray"
+            self.time_course=pd.DataFrame(tc, index=self.nodes)
+            self.cov_mat=func.covariance_mat(tc)
+        else:
+            self.time_course=None
 
     def degree(self, node="all"):
         """
@@ -83,7 +89,7 @@ class network:
         Calculate the characteristic path length of the network
         :return: Dictionary with average node distance np.array and characteristic path length np.float object
         """
-        sum_shrtpath_df=self.shortestpath().sum(axis=1)             # Sums Shortest Path Dataframe along axis 1
+        sum_shrtpath_df=self.shortestpath()['Distance'].sum(axis=1)             # Sums Shortest Path Dataframe along axis 1
         avg_shrtpath_node=np.divide(sum_shrtpath_df, len(self.nodes)-1)  # Divide each element in sum array by n-1 regions
         char_pathlength=np.sum(avg_shrtpath_node)/len(self.nodes)
         return {'node_avg_dist':avg_shrtpath_node, 'characteristic_path': char_pathlength}    # Calculate sum of the sum array and take the average
@@ -137,41 +143,55 @@ class network:
         """
         betw_centrality=pd.Series(np.zeros(len(self.nodes)), index=self.nodes)
         shortest_paths=self.shortestpath()['Path']
+
         for n in self.nodes:
             counter = 0
             mat=shortest_paths.drop(n, axis=0); mat=mat.drop(n, axis=1)  # Drops the nth column and the nth row.
             substr='-'+str(n)+'-'
+
             for c in mat.columns:
                 for e in mat.loc[:c,c]:
                     if e.find(substr) != -1:
                         counter += 1
             betw_centrality.loc[n]=counter/((len(self.nodes)-1)*(len(self.nodes)-2))
+
         return betw_centrality
 
-    def random_net(self):
+    def small_worldness(self, nrandnet=10, niter=10, seed=None, hqs=False, tc=[]):
         """
-        Returns a random network that is matched to the input networks covariance matrix.
-        Using Hirschberger-Qi-Steuer Algorithm as cited in Zalesky 2012b
-        :return: n x n dimensional pd.Dataframe
-        TODO test code, control if input has to be is positive finite
+        Computes small worldness (sigma) of network
+        :param: seed: float or integer which sets the seed for random network generation
+                niter: int of number of iterations that should be done during network generation
+                hqs: boolean value defines if hqs is used for random network generation
+                tc: timecourse as np.ndarray for hqs algorithm
+        :return:
         """
-        C=self.cov_mat
-        diag_sum=np.sum(np.diagonal(C))
-        diag_len=len(np.diagonal(C))
-        diag_mean=diag_sum/diag_len
-        off_mean=(np.sum(C)-diag_sum)/(C.size-diag_len)
-        off_var=0
-        for i in range(0,C.shape(0)-1):
-            for j in range(i+1,C.shape(1)):
-                off_var += 2*(C[i,j]-off_mean)  # Times 2  because each off diagonal value appears twice in covariance matrix
-        m = max(2, (diag_mean**2-off_mean**2/off_var))
-        mu = np.sqrt(off_mean/off_var)
-        sigma = -mu**2 + np.sqrt(mu**4+(off_var/m))
-        X=np.random.normal(mu,sigma,C.size)
-        Random_C=np.multiply(X,X.T)
-        return Random_C
+        import graph_measures.random_reference as randomnet
+        random_clust_coeff=[]
+        random_char_path=[]
 
-    def assortivity(self):
+        for i in range(nrandnet):
+
+            if hqs:
+                if tc: tc=self.time_course
+                assert tc, "Timecourse not specified"
+                random_net=randomnet.hqs_rand(tc)
+            else:
+                random_net=randomnet.rewired_rand(self.adj_mat, niter, seed)
+
+            random_clust_coeff.append(random_net.clust_coeff()['net_cluster'])
+            random_char_path.append(random_net.char_path()['characteristic_path'])
+
+        random_clust_coeff=np.mean(random_clust_coeff)
+        random_char_path=np.mean(random_char_path)
+
+        sig_num=(self.clust_coeff()['net_cluster']/random_clust_coeff)
+        sig_den=(self.char_path()['characteristic_path']/random_char_path)
+        sigma=sig_num/sig_den
+        return sigma
+
+
+    def modularity(self):
+        #TODO find algorithm to find modules in network
         return
-    def smallworldness(self):
-        return
+

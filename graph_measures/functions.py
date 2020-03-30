@@ -1,7 +1,6 @@
 import numpy as np
 import math
 import pandas as pd
-from scipy import stats
 
 def covariance_mat(M):
     """ Returns the covariance matrix of rows of input matrix
@@ -10,12 +9,9 @@ def covariance_mat(M):
     """
     if not isinstance(M, np.ndarray) and not isinstance(M, pd.DataFrame):           # Checks input type
         raise Exception('Input Matrix has to be np.array or pd.DataFrame')
-    M=np.array(M)   # Converts to np.array
-    C=np.zeros([M.shape[0], M.shape[0]])
-    for i in range(0,M.shape[0]):
-        for j in range(i,M.shape[0]):
-            C[i,j]=np.mean(np.multiply(M[i,:]-M.mean(1)[i], M[j,:]-M.mean(1)[j]))   # Covariance of the ith with the jth row
-            C[j,i]=C[i,j]                                                           # Set lower triangle of matrix to the same values as upper triangle
+    M=np.array(M)                               # Converts to np.array
+    M=M-M.mean(axis=1).reshape(-1,1)            # Subtracts row means from each row
+    C=np.matmul(M, M.T)/M.shape[1]             # Matrix multiplication yields the covariance matrix
     return C
 
 def pearson_corr(M):
@@ -96,7 +92,7 @@ def dynmfc(TimeCourseBold, windowsize=30, stepsize=10, TR=2, method=1, output_wi
             4) TR in seconds
             5) Method:  1 -- pearson correlation
                         2 -- partial correlation
-            6) Output_windows : boolean variable defining correlation matrices for each timewindow are outputet
+            6) Output_windows : boolean variable defining if correlation matrices for each timewindow are outputet
     :return: ndim array containing the correlations between the region-wise correlation matrices for each time window
     """
     assert int(stepsize) >= int(TR), "Stepsize has to be greater than repetition time"
